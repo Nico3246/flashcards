@@ -1,53 +1,31 @@
-from flask import Flask, render_template, request, jsonify
-import random
-import json
-import os
+import toga
+from toga.style import Pack
+from toga.style.pack import COLUMN
 
-app = Flask(__name__)
+class FlashcardsApp(toga.App):
+    def startup(self):
+        # Crear el layout de la aplicación
+        self.main_box = toga.Box(style=Pack(direction=COLUMN))
 
-# Ruta para guardar las tarjetas
-CARDS_FILE = "cards.json"
+        # Crear una etiqueta para mostrar un mensaje
+        self.label = toga.Label('¡Bienvenido a la App de Flashcards!', style=Pack(padding=5))
 
-# Verificar si el archivo de tarjetas ya existe
-if os.path.exists(CARDS_FILE):
-    with open(CARDS_FILE, "r") as file:
-        cards = json.load(file)
-else:
-    cards = []
+        # Crear un botón que cambiará el texto de la etiqueta al hacer clic
+        self.button = toga.Button('Empezar a crear tarjetas', on_press=self.on_button_press, style=Pack(padding=5))
 
-# Ruta para guardar tarjetas
-@app.route('/save_card', methods=['POST'])
-def save_card():
-    front = request.form['front']
-    back = request.form['back']
-    
-    if front and back:
-        cards.append({"front": front, "back": back})
-        # Guardar en el archivo
-        with open(CARDS_FILE, "w") as file:
-            json.dump(cards, file)
-        return jsonify({"message": "Tarjeta guardada exitosamente"}), 200
-    else:
-        return jsonify({"message": "Por favor ingresa ambos lados de la tarjeta"}), 400
+        # Agregar los widgets al layout
+        self.main_box.add(self.label)
+        self.main_box.add(self.button)
 
-# Ruta para obtener tarjetas aleatorias
-@app.route('/get_random_card', methods=['GET'])
-def get_random_card():
-    if not cards:
-        return jsonify({"message": "No hay tarjetas creadas."}), 404
-    
-    card = random.choice(cards)
-    return jsonify(card)
+        # Crear la ventana principal
+        self.main_window = toga.MainWindow(title=self.formal_name)
+        self.main_window.content = self.main_box
+        self.main_window.show()
 
-# Ruta para ver todas las tarjetas
-@app.route('/get_all_cards', methods=['GET'])
-def get_all_cards():
-    return jsonify(cards)
-
-# Ruta principal
-@app.route('/')
-def index():
-    return render_template('index.html')
+    def on_button_press(self, widget):
+        # Cambiar el texto de la etiqueta cuando se presione el botón
+        self.label.text = 'Creando tarjetas...'
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app = FlashcardsApp('Flashcards', 'org.example.flashcards')
+    app.main_loop()
