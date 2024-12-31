@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Flashcards App</h1>
+        
+        <button onclick="openCreateCardForm()">Crear Tarjetas</button>
+        <button onclick="practiceCard()">Practicar</button>
+        <button onclick="viewCards()">Ver Tarjetas</button>
+        
+        <div id="create-card-form" class="form-container" style="display:none;">
+            <h2>Crear una tarjeta</h2>
+            <label for="front">Frente:</label>
+            <input type="text" id="front" placeholder="Escribe el frente de la tarjeta">
+            <label for="back">Parte Trasera:</label>
+            <input type="text" id="back" placeholder="Escribe la parte trasera de la tarjeta">
+            <button onclick="saveCard()">Guardar Tarjeta</button>
+            <p id="status-message"></p>
+        </div>
+        
+        <div id="practice-card" style="display:none;">
+            <h2>Practicar Tarjetas</h2>
+            <p id="card-display">Haz clic en "Practicar" para empezar.</p>
+            <button onclick="flipCard()">Ver Parte Trasera</button>
+            <button onclick="nextCard()">Siguiente Tarjeta</button>
+        </div>
+        
+        <div id="all-cards" style="display:none;">
+            <h2>Ver Tarjetas</h2>
+            <ul id="cards-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Función para mostrar el formulario de crear tarjetas
+        function openCreateCardForm() {
+            document.getElementById('create-card-form').style.display = 'block';
+            document.getElementById('practice-card').style.display = 'none';
+            document.getElementById('all-cards').style.display = 'none';
+        }
+
+        // Función para guardar la tarjeta
+        function saveCard() {
+            const front = document.getElementById('front').value;
+            const back = document.getElementById('back').value;
+
+            fetch('/save_card', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    'front': front,
+                    'back': back
+                }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                document.getElementById('status-message').textContent = data.message;
+                document.getElementById('front').value = '';
+                document.getElementById('back').value = '';
+              });
+        }
+
+        // Función para practicar tarjetas
+        let currentCard = null;
+        function practiceCard() {
+            document.getElementById('create-card-form').style.display = 'none';
+            document.getElementById('all-cards').style.display = 'none';
+            document.getElementById('practice-card').style.display = 'block';
+            nextCard();
+        }
+
+        // Función para ver la siguiente tarjeta
+        function nextCard() {
+            fetch('/get_random_card')
+                .then(response => response.json())
+                .then(card => {
+                    if (card.message) {
+                        alert(card.message);
+                    } else {
+                        currentCard = card;
+                        document.getElementById('card-display').textContent = card.front;
+                    }
+                });
+        }
+
+        // Función para voltear la tarjeta
+        function flipCard() {
+            if (currentCard) {
+                document.getElementById('card-display').textContent = currentCard.back;
+            }
+        }
+
+        // Función para ver todas las tarjetas
+        function viewCards() {
+            document.getElementById('create-card-form').style.display = 'none';
+            document.getElementById('practice-card').style.display = 'none';
+            document.getElementById('all-cards').style.display = 'block';
+
+            fetch('/get_all_cards')
+                .then(response => response.json())
+                .then(cards => {
+                    const cardsList = document.getElementById('cards-list');
+                    cardsList.innerHTML = '';
+                    cards.forEach(card => {
+                        const li = document.createElement('li');
+                        li.textContent = `Frente: ${card.front} - Parte Trasera: ${card.back}`;
+                        cardsList.appendChild(li);
+                    });
+                });
+        }
+    </script>
+
+</body>
+</html>
